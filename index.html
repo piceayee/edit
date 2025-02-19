@@ -26,8 +26,24 @@
     <div id="map"></div>
     <div id="photoList"></div>
 
+    <script type="module">
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 
-    
+    const firebaseConfig = {
+  apiKey: "AIzaSyDRq-h9nuw31LGz2iTGXm-1NeKj4bAlMSE",
+  authDomain: "piceayeemap.firebaseapp.com",
+  projectId: "piceayeemap",
+  storageBucket: "piceayeemap.firebasestorage.app",
+  messagingSenderId: "693824232955",
+  appId: "1:693824232955:web:d1ae4a0d65b886a6ddbf5e",
+  measurementId: "G-VGF1QQG5C9"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+    console.log("Firebase 連接成功！");
+    </script>
     
     <!-- 確保 script.js 在 <body> 末尾 -->
     <script src="script.js"></script>
