@@ -1,0 +1,110 @@
+#photoList {
+    display: flex !important;  /* 讓內容橫向排列 */
+    flex-direction: row !important;  /* 確保方向為水平 */
+    overflow-x: auto !important;  /* 允許左右滾動 */
+    white-space: nowrap;  /* 避免元素自動換行 */
+    max-width: 100%;  /* 限制最大寬度 */
+    padding: 10px;
+    gap: 10px;  /* 照片之間的間距 */
+    border-bottom: 2px solid #ccc;  /* 增加底部分隔線 */
+    scroll-behavior: smooth;  /* 讓滾動動畫更順暢 */
+}
+
+.photo-item {
+    flex: 0 0 auto;  /* 讓每個圖片區塊固定寬度，避免換行 */
+    width: 150px;  /* 調整每個照片區塊的寬度 */
+    text-align: center;
+}
+
+.photo-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.thumbnail {
+    width: 120px;
+    height: auto;
+    border-radius: 5px;
+}
+
+
+/* 美化滾動條 (Chrome & Edge) */
+#photoList::-webkit-scrollbar {
+    height: 8px;
+}
+
+#photoList::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 1px;
+
+}
+
+#photoList::-webkit-scrollbar-thumb:hover {
+    background: #202020;
+}
+
+
+.photo-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.photo-name {
+    width: 100%;
+    text-align: center;
+    font-size: 18px; /* 增加字體大小 */
+    /*font-weight: bold;  讓標題更醒目 */
+}
+
+.go-to-marker {
+    cursor: pointer;
+    padding: 5px 10px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 5px;
+}
+
+.go-to-marker:hover {
+    background: #0056b3;
+}
+
+.category-selection {
+    display: flex;
+    flex-direction: column;  /* 讓分類選項直向排列 */
+    gap: 5px;
+}
+
+.photo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 120px; /* 固定寬度 */
+    height: 250px; /* 統一高度 */
+}
+
+.thumbnail {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: cover;  /* 確保圖片不會變形 */
+}
+
+.photo-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end; /* 讓內容貼齊底部 */
+}
+
+.popup-title {
+    text-align: center;
+    font-size: 20px; /* 放大字體 */
+    font-weight: bold; /* 加粗 */
+    margin-bottom: 8px; /* 增加間距 */
+}
