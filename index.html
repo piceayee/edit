@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <link rel="stylesheet" href="style.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPS 照片標記</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.js"></script>
@@ -12,11 +13,10 @@
         #map { height: 500px; }
         #photoList img { width: 100px; margin: 5px; }
     </style>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"></script>
+    <button id="exportData">匯出資料</button>
+    <input type="file" id="importData" style="display: none;" />
+    <button id="importButton">匯入資料</button>
+    
 </head>
 <body>
 
@@ -26,26 +26,10 @@
     <div id="map"></div>
     <div id="photoList"></div>
 
-    <script>
-        // Firebase 設定
-        const firebaseConfig = {
-            apiKey: "",
-            authDomain: "piceayeemap.firebaseapp.com",
-            projectId: "piceayeemap",
-            storageBucket: "piceayeemap.appspot.com",
-            messagingSenderId: "693824232955",
-            appId: "1:693824232955:web:d1ae4a0d65b886a6ddbf5e",
-            measurementId: "G-VGF1QQG5C9"
-        };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); // Firestore 資料庫
-        const storage = firebase.storage(); // Firebase Storage
-        
-        console.log("Firebase 連接成功！");
-    </script>
-
+    
+    
+    <!-- 確保 script.js 在 <body> 末尾 -->
     <script src="script.js"></script>
 
 </body>
