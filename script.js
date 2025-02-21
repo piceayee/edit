@@ -2,6 +2,7 @@
 		
 window.onload = function () {
     console.log("🔵 頁面載入完成，初始化地圖...");
+    loadMarkersFromGitHub();
 
     const fileInput = document.getElementById("fileInput");
     const clearMarkersBtn = document.getElementById("clearMarkers");
@@ -177,12 +178,6 @@ window.onload = function () {
     }
 }
 
-// 在地圖載入時執行
-window.onload = function () {
-    console.log("🔵 頁面載入完成，初始化地圖...");
-    loadMarkersFromGitHub();  // 🚀 讀取 GitHub JSON
-};
- 
        
     function addMarkerToMap(markerData) {
         let markerColor = "blue"; // 預設藍色
