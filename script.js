@@ -2,7 +2,6 @@
 		
 window.onload = function () {
     console.log("🔵 頁面載入完成，初始化地圖...");
-    loadMarkersFromGitHub();
 
     const fileInput = document.getElementById("fileInput");
     const clearMarkersBtn = document.getElementById("clearMarkers");
@@ -17,6 +16,8 @@ window.onload = function () {
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    loadMarkersFromGitHub();
 
     let db;
     let request = indexedDB.open("PhotoMapDB", 1);
@@ -156,7 +157,7 @@ window.onload = function () {
     }
     
     async function loadMarkersFromGitHub() {
-    const url = "https://github.com/piceayee/edit/blob/main/photoMapBackup%20(16).json"; // 🔹 替換成你的 JSON 直鏈網址
+    const url = "https://raw.githubusercontent.com/piceayee/edit/refs/heads/main/photoMapBackup.json"; // 🔹 替換成你的 JSON 直鏈網址
 
     try {
         let response = await fetch(url);
