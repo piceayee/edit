@@ -83,7 +83,7 @@ window.onload = function () {
     });
     
 
-    function compressImage(img, quality = 0.7, maxWidth = 800) {
+    function compressImage(img, quality = 0.5, maxWidth = 800) {
         return new Promise((resolve, reject) => {
             let canvas = document.createElement("canvas");
             let ctx = canvas.getContext("2d");
@@ -132,15 +132,28 @@ window.onload = function () {
                 let compressedDataUrl = reader.result;
                 let transaction = db.transaction(["photoMarkers"], "readwrite");
                 let objectStore = transaction.objectStore("photoMarkers");
+    
                 let markerData = { latitude, longitude, image: compressedDataUrl, name: "未命名照片" };
-                objectStore.add(markerData);
-                console.log("✅ 照片已壓縮並儲存！");
+    
+                let request = objectStore.add(markerData);
+    
+                request.onsuccess = function (event) {
+                    markerData.id = event.target.result; // 取得 ID
+                    console.log("✅ 照片已壓縮並儲存！");
+                    
+                    // ✅ 立即顯示照片與標記
+                    addMarkerToMap(markerData);
+                    console.log("照片成功儲存！");
+                    // ✅ 地圖移動到最新的標記點
+                    map.flyTo([latitude+0.01, longitude], 15);
+                };
             };
             reader.readAsDataURL(compressedBlob);
         } catch (error) {
             console.error("❌ 儲存標記失敗：", error);
         }
     }
+    
      
        
     function addMarkerToMap(markerData) {
@@ -278,19 +291,10 @@ window.onload = function () {
         };
     }
         
-
     function convertDMSToDD(dms) {
         return dms[0] + dms[1] / 60 + dms[2] / 3600;
     }
 
-    function compressImage(img) {
-        let canvas = document.createElement("canvas");
-        let ctx = canvas.getContext("2d");
-        canvas.width = img.width * 0.5;
-        canvas.height = img.height * 0.5;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL("image/jpeg", 0.7);
-    }
 
     clearMarkersBtn.addEventListener("click", function () {
         let transaction = db.transaction(["photoMarkers"], "readwrite");
