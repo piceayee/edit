@@ -57,15 +57,21 @@ window.onload = function () {
             reader.onload = function (e) {
                 let img = new Image();
                 img.src = e.target.result;
-                img.onload = function () {
-                    EXIF.getData(img, function () {
+                img.onload = async function () {
+                    EXIF.getData(img, async function () {
                         let lat = EXIF.getTag(this, "GPSLatitude");
                         let lon = EXIF.getTag(this, "GPSLongitude");
                         if (lat && lon) {
                             let latitude = convertDMSToDD(lat);
                             let longitude = convertDMSToDD(lon);
-                            let compressedImg = compressImage(img);
-                            saveMarker(latitude, longitude, compressedImg);
+    
+                            // ✅ 確保 `compressImage()` 有被 `await`
+                            try {
+                                let compressedImg = await compressImage(img);
+                                saveMarker(latitude, longitude, compressedImg);
+                            } catch (error) {
+                                console.error("❌ 圖片壓縮失敗：", error);
+                            }
                         } else {
                             alert("❌ 照片不含 GPS 資訊");
                         }
@@ -75,33 +81,68 @@ window.onload = function () {
             reader.readAsDataURL(file);
         }
     });
-
-    function saveMarker(latitude, longitude, imageData) {
-        console.log("嘗試儲存 Marker，檢查 db:", db);
-    if (!db) {
-        console.error("IndexedDB 尚未開啟！");
-        setTimeout(() => saveMarker(lat, lng, imageData), 500);
-        return;
-    }
-        let transaction = db.transaction(["photoMarkers"], "readwrite");
-        let objectStore = transaction.objectStore("photoMarkers");
-    
-        let markerData = { latitude, longitude, image: imageData, name: "未命名照片" };
-        let request = objectStore.add(markerData);
-        request.onsuccess = function (event) {
-            markerData.id = event.target.result; // 取得 ID
-            addMarkerToMap(markerData);
-            console.log("照片成功儲存！");
-            // ✅ 地圖移動到最新的標記點
-            map.flyTo([latitude+0.01, longitude], 15);
-        };
-    
-        request.onerror = function(event) {
-            console.error("儲存照片失敗:", event.target.error);
-        };
-    }
     
 
+    function compressImage(img, quality = 0.7, maxWidth = 800) {
+        return new Promise((resolve, reject) => {
+            let canvas = document.createElement("canvas");
+            let ctx = canvas.getContext("2d");
+    
+            let scaleFactor = maxWidth / img.width;
+            if (scaleFactor > 1) scaleFactor = 1; // 確保不會放大圖片
+    
+            canvas.width = img.width * scaleFactor;
+            canvas.height = img.height * scaleFactor;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+            console.log("🎨 嘗試壓縮圖片...");
+            
+            // 嘗試使用 WebP，如果失敗就改用 JPEG
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    console.log("✅ WebP 壓縮成功！Blob:", blob);
+                    resolve(blob);
+                } else {
+                    console.warn("⚠️ WebP 失敗，改用 JPEG");
+                    canvas.toBlob((jpegBlob) => {
+                        if (jpegBlob) {
+                            console.log("✅ JPEG 壓縮成功！Blob:", jpegBlob);
+                            resolve(jpegBlob);
+                        } else {
+                            console.error("❌ 轉換 Blob 失敗");
+                            reject(new Error("轉換 Blob 失敗"));
+                        }
+                    }, "image/jpeg", quality);
+                }
+            }, "image/webp", quality);
+        });
+    }
+    
+
+    async function saveMarker(latitude, longitude, compressedBlob) {
+        try {
+            console.log("✅ 圖片已壓縮，開始儲存...");
+    
+            if (!(compressedBlob instanceof Blob)) {
+                throw new Error("compressImage() 沒有回傳 Blob");
+            }
+    
+            let reader = new FileReader();
+            reader.onloadend = function () {
+                let compressedDataUrl = reader.result;
+                let transaction = db.transaction(["photoMarkers"], "readwrite");
+                let objectStore = transaction.objectStore("photoMarkers");
+                let markerData = { latitude, longitude, image: compressedDataUrl, name: "未命名照片" };
+                objectStore.add(markerData);
+                console.log("✅ 照片已壓縮並儲存！");
+            };
+            reader.readAsDataURL(compressedBlob);
+        } catch (error) {
+            console.error("❌ 儲存標記失敗：", error);
+        }
+    }
+     
+       
     function addMarkerToMap(markerData) {
         let markerColor = "blue"; // 預設藍色
         if (markerData.categories) {
