@@ -154,7 +154,35 @@ window.onload = function () {
         }
     }
     
-     
+    async function loadMarkersFromGitHub() {
+    const url = "https://github.com/piceayee/edit/blob/main/photoMapBackup%20(16).json"; // 🔹 替換成你的 JSON 直鏈網址
+
+    try {
+        let response = await fetch(url);
+        if (!response.ok) throw new Error("❌ 無法獲取 JSON，請檢查網址是否正確");
+
+        let data = await response.json();
+        console.log("✅ 成功載入 GitHub JSON:", data);
+
+        // 確保是陣列格式
+        if (!Array.isArray(data)) {
+            throw new Error("❌ JSON 格式錯誤，應該是陣列");
+        }
+
+        // 將標記加入地圖
+        data.forEach(markerData => addMarkerToMap(markerData));
+
+    } catch (error) {
+        console.error("❌ 載入 GitHub JSON 失敗:", error);
+    }
+}
+
+// 在地圖載入時執行
+window.onload = function () {
+    console.log("🔵 頁面載入完成，初始化地圖...");
+    loadMarkersFromGitHub();  // 🚀 讀取 GitHub JSON
+};
+ 
        
     function addMarkerToMap(markerData) {
         let markerColor = "blue"; // 預設藍色
