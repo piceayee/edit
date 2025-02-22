@@ -181,13 +181,13 @@ window.onload = function () {
 
        
     function addMarkerToMap(markerData) {
-        let markerColor = "blue"; // 預設藍色
+        let markerColor = "gray"; // 預設藍色
         if (markerData.categories) {
-            if (markerData.categories.includes("古蹟")) {
+            if (markerData.categories.includes("老屋")) {
                 markerColor = "red";
-            } else if (markerData.categories.includes("建築")) {
+            } else if (markerData.categories.includes("磚＆裝飾")) {
                 markerColor = "blue";
-            } else if (markerData.categories.includes("風景")) {
+            } else if (markerData.categories.includes("街景")) {
                 markerColor = "green";
             }
         }
@@ -212,9 +212,9 @@ window.onload = function () {
             <div class="photo-info">
                 <input type="text" class="photo-name" placeholder="輸入照片名稱" data-id="${markerData.id}" value="${markerData.name}">
                 <div class="category-selection">
-                    <label><input type="checkbox" value="風景"> 風景</label>
-                    <label><input type="checkbox" value="建築"> 建築</label>
-                    <label><input type="checkbox" value="古蹟"> 古蹟</label>
+                    <label><input type="checkbox" value="老屋"> 老屋</label>
+                    <label><input type="checkbox" value="磚＆裝飾"> 磚＆裝飾</label>
+                    <label><input type="checkbox" value="街景"> 街景</label>
                 </div>
                 <button class="go-to-marker">查看</button>
                 <button class="delete-photo">刪除</button>
