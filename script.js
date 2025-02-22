@@ -181,12 +181,12 @@ window.onload = function () {
 
        
     function addMarkerToMap(markerData) {
-        let markerColor = "gray"; // 預設藍色
+        let markerColor = "blue"; // 預設藍色
         if (markerData.categories) {
             if (markerData.categories.includes("老屋")) {
                 markerColor = "red";
             } else if (markerData.categories.includes("磚＆裝飾")) {
-                markerColor = "blue";
+                markerColor = "black";
             } else if (markerData.categories.includes("街景")) {
                 markerColor = "green";
             }
