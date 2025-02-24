@@ -1,5 +1,8 @@
 	
-		
+// ✅ 讓 `stopLoadingGitHub` 變數可用於所有函式
+let stopLoadingGitHub = localStorage.getItem("stopLoadingGitHub") === "true"; 
+
+
 window.onload = function () {
     console.log("🔵 頁面載入完成，初始化地圖...");
 
@@ -17,7 +20,13 @@ window.onload = function () {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    loadMarkersFromGitHub();
+    // 🚀 只有當 `stopLoadingGitHub` 為 false 時，才載入 GitHub JSON
+    if (!stopLoadingGitHub) {
+        console.log("✅ 載入 GitHub JSON...");
+        loadMarkersFromGitHub();
+    } else {
+        console.log("⏹️ 已按過 `clearMarkers`，不載入 GitHub JSON");
+    }
 
     let db;
     let request = indexedDB.open("PhotoMapDB", 1);
@@ -52,6 +61,39 @@ window.onload = function () {
         };
     }
 
+    function showNotification(message) {
+        let notification = document.createElement("div");
+        notification.className = "notification";
+        notification.innerHTML = `
+            <span style="margin-right:10px;">⚠️ ${message}</span>
+            <button onclick="this.parentElement.remove()" 
+                    style="border:none; background:none; color:white; cursor:pointer;">✖</button>
+        `;
+    
+        // 🔥 設定通知樣式，讓它不會影響其他操作
+        Object.assign(notification.style, {
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            backgroundColor: "#333",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            zIndex: "9999", // 讓它顯示在最上層
+            display: "flex",
+            alignItems: "center"
+        });
+    
+        document.body.appendChild(notification);
+    
+        // 3秒後自動消失
+        setTimeout(() => {
+            if (notification) notification.remove();
+        }, 3000);
+    }
+    
+
     fileInput.addEventListener("change", function (event) {
         let files = event.target.files;
         for (let file of files) {
@@ -75,7 +117,8 @@ window.onload = function () {
                                 console.error("❌ 圖片壓縮失敗：", error);
                             }
                         } else {
-                            alert("❌ 照片不含 GPS 資訊");
+                            showNotification("照片不含 GPS 資訊");
+                            promptForGPS(img);
                         }
                     });
                 };
@@ -85,7 +128,7 @@ window.onload = function () {
     });
     
 
-    function compressImage(img, quality = 0.5, maxWidth = 800) {
+    function compressImage(img, quality = 0.5, maxWidth = 800) { //壓縮
         return new Promise((resolve, reject) => {
             let canvas = document.createElement("canvas");
             let ctx = canvas.getContext("2d");
@@ -119,6 +162,47 @@ window.onload = function () {
             }, "image/webp", quality);
         });
     }
+    // 🚀 當照片沒有 GPS 時，彈出輸入框
+function promptForGPS(img) {
+        // 🔍 檢查是否已經存在 modal，避免重複
+        let existingModal = document.querySelector(".gps-modal");
+        if (existingModal) {
+            alert("⚠️ 請先完成上一張照片的 GPS 填寫！");
+            return;
+        }
+    let modal = document.createElement("div");
+    modal.className = "gps-modal";
+    modal.innerHTML = `
+        <div class="gps-content">
+            <h2>🚨 照片沒有 GPS 資訊，請手動輸入</h2>
+            <img src="${img.src}" class="gps-preview">
+            <label>經度 (Longitude): <input type="number" id="manualLongitude" step="0.00001"></label>
+            <label>緯度 (Latitude): <input type="number" id="manualLatitude" step="0.00001"></label>
+            <button id="saveGPS">✅ 儲存</button>
+            <button id="cancelGPS">❌ 取消</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById("saveGPS").addEventListener("click", async function () {
+        let latitude = parseFloat(document.getElementById("manualLatitude").value);
+        let longitude = parseFloat(document.getElementById("manualLongitude").value);
+
+        if (!isNaN(latitude) && !isNaN(longitude)) {
+            try {
+                let compressedImg = await compressImage(img);  // 🔥 等待壓縮完成
+                saveMarker(latitude, longitude, compressedImg); // ✅ 傳入 Blob
+                document.body.removeChild(modal);
+            } catch (error) {
+                console.error("❌ 圖片壓縮失敗：", error);
+                alert("圖片壓縮失敗，請重試！");
+            }
+        } else {
+            alert("❌ 請輸入有效的經緯度！");
+        }
+    });
+}
     
 
     async function saveMarker(latitude, longitude, compressedBlob) {
@@ -147,7 +231,7 @@ window.onload = function () {
                     addMarkerToMap(markerData);
                     console.log("照片成功儲存！");
                     // ✅ 地圖移動到最新的標記點
-                    map.flyTo([latitude+0.01, longitude], 15);
+                    map.flyTo([latitude+0.005, longitude], 15);
                 };
             };
             reader.readAsDataURL(compressedBlob);
@@ -157,7 +241,11 @@ window.onload = function () {
     }
     
     async function loadMarkersFromGitHub() {
-    const url = "https://raw.githubusercontent.com/piceayee/edit/refs/heads/main/photoMapBackup.json"; // 🔹 替換成你的 JSON 直鏈網址
+        if (stopLoadingGitHub) {
+            console.log("⏹️ 已按下清除標記，停止載入 GitHub JSON");
+            return; // 🔹 直接跳出，不執行載入
+        }
+        const url = "https://raw.githubusercontent.com/piceayee/edit/refs/heads/main/photoMapBackup.json"; // 🔹 替換成你的 JSON 直鏈網址
 
     try {
         let response = await fetch(url);
@@ -178,6 +266,7 @@ window.onload = function () {
         console.error("❌ 載入 GitHub JSON 失敗:", error);
     }
 }
+
 
        
     function addMarkerToMap(markerData) {
@@ -270,7 +359,9 @@ window.onload = function () {
             deleteMarker(markerData.id, listItem, marker);
         });
     
-        photoList.appendChild(listItem);
+    // ✅ 讓最新上傳的照片排在最左邊
+    let photoList = document.getElementById("photoList");
+    photoList.prepend(listItem);  // **使用 prepend() 而不是 appendChild()**
     }
     
 
@@ -321,12 +412,22 @@ window.onload = function () {
 
 
     clearMarkersBtn.addEventListener("click", function () {
+        localStorage.setItem("stopLoadingGitHub", "true"); // ✅ 儲存狀態，防止 GitHub JSON 再次載入
+        stopLoadingGitHub = true; // ✅ 立即生效
         let transaction = db.transaction(["photoMarkers"], "readwrite");
         let objectStore = transaction.objectStore("photoMarkers");
         objectStore.clear();
-        location.reload();
+        console.log("🗑️ 所有標記已清除！");
+        location.reload(); // 🔹 強制重新整理，確保標記清除
     });
 
+    document.getElementById("reloadGitHubData").addEventListener("click", function () {
+        localStorage.removeItem("stopLoadingGitHub"); // ✅ 刪除阻止載入的設定
+        stopLoadingGitHub = false; // ✅ 立即讓變數生效
+        console.log("🔄 允許載入 GitHub JSON，重新整理頁面...");
+        location.reload(); // ✅ 重新整理頁面以載入 GitHub JSON
+    });
+    
     document.getElementById("exportData").addEventListener("click", function () {
         let transaction = db.transaction(["photoMarkers"], "readonly");
         let objectStore = transaction.objectStore("photoMarkers");
