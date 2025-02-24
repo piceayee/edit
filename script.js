@@ -23,7 +23,7 @@ window.onload = function () {
     // 🚀 只有當 `stopLoadingGitHub` 為 false 時，才載入 GitHub JSON
     if (!stopLoadingGitHub) {
         console.log("✅ 載入 GitHub JSON...");
-        loadMarkersFromGitHub();
+        loadAllMarkersFromGitHub();
     } else {
         console.log("⏹️ 已按過 `clearMarkers`，不載入 GitHub JSON");
     }
@@ -231,7 +231,7 @@ function promptForGPS(img) {
                     addMarkerToMap(markerData);
                     console.log("照片成功儲存！");
                     // ✅ 地圖移動到最新的標記點
-                    map.flyTo([latitude+0.005, longitude], 15);
+                    map.flyTo([latitude+0.01, longitude], 15,{ duration: 0.8 });
                 };
             };
             reader.readAsDataURL(compressedBlob);
@@ -240,34 +240,65 @@ function promptForGPS(img) {
         }
     }
     
-    async function loadMarkersFromGitHub() {
+    async function loadAllMarkersFromGitHub() {
         if (stopLoadingGitHub) {
             console.log("⏹️ 已按下清除標記，停止載入 GitHub JSON");
-            return; // 🔹 直接跳出，不執行載入
+            return;
         }
-        const url = "https://raw.githubusercontent.com/piceayee/edit/refs/heads/main/photoMapBackup.json"; // 🔹 替換成你的 JSON 直鏈網址
-
-    try {
-        let response = await fetch(url);
-        if (!response.ok) throw new Error("❌ 無法獲取 JSON，請檢查網址是否正確");
-
-        let data = await response.json();
-        console.log("✅ 成功載入 GitHub JSON:", data);
-
-        // 確保是陣列格式
-        if (!Array.isArray(data)) {
-            throw new Error("❌ JSON 格式錯誤，應該是陣列");
+    
+        const repoOwner = "piceayee";
+        const repoName = "edit";
+        const folderPath = "data"; // GitHub 上的資料夾名稱
+        const branch = "main"; // 或者你的分支名稱
+    
+        // 🚀 1. 使用 GitHub API 取得資料夾內的檔案列表
+        const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${folderPath}?ref=${branch}`;
+        
+        try {
+            let response = await fetch(apiUrl);
+            if (!response.ok) throw new Error("❌ 無法獲取資料夾內容，請檢查 GitHub API 設定");
+    
+            let files = await response.json();
+            console.log("✅ 成功獲取資料夾內的檔案:", files);
+    
+            // 🚀 2. 過濾出 JSON 檔案
+            let jsonFiles = files.filter(file => file.name.endsWith(".json"));
+    
+            if (jsonFiles.length === 0) {
+                console.warn("⚠️ `data/` 資料夾內沒有 JSON 檔案！");
+                return;
+            }
+    
+            // 🚀 3. 逐一下載 JSON 檔案並載入標記
+            for (let file of jsonFiles) {
+                let rawUrl = file.download_url; // GitHub 提供的原始下載連結
+                await loadMarkersFromJson(rawUrl);
+            }
+    
+        } catch (error) {
+            console.error("❌ 無法載入 GitHub JSON 資料夾:", error);
         }
-
-        // 將標記加入地圖
-        data.forEach(markerData => addMarkerToMap(markerData));
-
-    } catch (error) {
-        console.error("❌ 載入 GitHub JSON 失敗:", error);
     }
-}
-
-
+    
+    // 📌 這個函式會讀取特定 JSON 檔案並加入標記
+    async function loadMarkersFromJson(url) {
+        try {
+            let response = await fetch(url);
+            if (!response.ok) throw new Error(`❌ 無法獲取 JSON: ${url}`);
+    
+            let data = await response.json();
+            console.log(`✅ 成功載入 JSON: ${url}`, data);
+    
+            if (!Array.isArray(data)) {
+                throw new Error("❌ JSON 格式錯誤，應該是陣列");
+            }
+    
+            data.forEach(markerData => addMarkerToMap(markerData));
+    
+        } catch (error) {
+            console.error(`❌ 載入 JSON 失敗: ${url}`, error);
+        }
+    }
        
     function addMarkerToMap(markerData) {
         let markerColor = "blue"; // 預設藍色
@@ -291,7 +322,7 @@ function promptForGPS(img) {
         }).addTo(map)
             .bindPopup(`<strong>${markerData.name}</strong><br><img src="${markerData.image}" width="300"><br>GPS: ${markerData.latitude.toFixed(5)}, ${markerData.longitude.toFixed(5)}`)
             .on("click", function () {
-                map.flyTo([markerData.latitude+0.003, markerData.longitude], 17,{ duration: 0.8 });
+                map.flyTo([markerData.latitude+0.01, markerData.longitude], 15,{ duration: 0.8 });
             });
     
         let listItem = document.createElement("div");
