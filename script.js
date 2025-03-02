@@ -2,6 +2,12 @@
 // ✅ 讓 `stopLoadingGitHub` 變數可用於所有函式
 let stopLoadingGitHub = localStorage.getItem("stopLoadingGitHub") === "true"; 
 
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("imageModal");
+    if (modal) {
+        modal.style.display = "none";  // 確保 modal 預設隱藏
+    }
+});
 
 window.onload = function () {
     console.log("🔵 頁面載入完成，初始化地圖...");
@@ -93,6 +99,19 @@ window.onload = function () {
         }, 3000);
     }
     
+    function extractPhotoDate(exifDate) {
+        if (!exifDate) return "未知日期"; // 防止 undefined
+    
+        let parts = exifDate.split(" "); // 分割日期與時間
+        let dateParts = parts[0].split(":"); // 拆分 `YYYY:MM:DD`
+        
+        if (dateParts.length === 3) {
+            return `${dateParts[0]}年${dateParts[1]}月${dateParts[2]}日`; // 格式化為 "X年Y月Z日"
+        }
+        
+        return "未知日期"; // 如果格式不對，回傳預設值
+    }
+    
 
     fileInput.addEventListener("change", function (event) {
         let files = event.target.files;
@@ -105,6 +124,12 @@ window.onload = function () {
                     EXIF.getData(img, async function () {
                         let lat = EXIF.getTag(this, "GPSLatitude");
                         let lon = EXIF.getTag(this, "GPSLongitude");
+                        let exifDate = EXIF.getTag(this, "DateTimeOriginal"); // 讀取 EXIF 拍攝時間
+
+                        let phototime = extractPhotoDate(exifDate);
+                        console.log("📸 讀取 EXIF 時間:", exifDate); // 確保有讀取到原始時間
+                        console.log("📅 格式化後的拍攝時間:", phototime);
+
                         if (lat && lon) {
                             let latitude = convertDMSToDD(lat);
                             let longitude = convertDMSToDD(lon);
@@ -112,7 +137,7 @@ window.onload = function () {
                             // ✅ 確保 `compressImage()` 有被 `await`
                             try {
                                 let compressedImg = await compressImage(img);
-                                saveMarker(latitude, longitude, compressedImg);
+                                saveMarker(latitude, longitude, compressedImg, phototime);
                             } catch (error) {
                                 console.error("❌ 圖片壓縮失敗：", error);
                             }
@@ -185,6 +210,10 @@ function promptForGPS(img) {
 
     document.body.appendChild(modal);
 
+    document.getElementById("cancelGPS").addEventListener("click", function () {
+        document.body.removeChild(modal); // ✅ 移除輸入框
+    });    
+
     document.getElementById("saveGPS").addEventListener("click", async function () {
         let latitude = parseFloat(document.getElementById("manualLatitude").value);
         let longitude = parseFloat(document.getElementById("manualLongitude").value);
@@ -192,7 +221,7 @@ function promptForGPS(img) {
         if (!isNaN(latitude) && !isNaN(longitude)) {
             try {
                 let compressedImg = await compressImage(img);  // 🔥 等待壓縮完成
-                saveMarker(latitude, longitude, compressedImg); // ✅ 傳入 Blob
+                saveMarker(latitude, longitude, compressedImg, phototime); // ✅ 傳入 Blob
                 document.body.removeChild(modal);
             } catch (error) {
                 console.error("❌ 圖片壓縮失敗：", error);
@@ -205,7 +234,7 @@ function promptForGPS(img) {
 }
     
 
-    async function saveMarker(latitude, longitude, compressedBlob) {
+    async function saveMarker(latitude, longitude, compressedBlob, phototime) {
         try {
             console.log("✅ 圖片已壓縮，開始儲存...");
     
@@ -219,8 +248,15 @@ function promptForGPS(img) {
                 let transaction = db.transaction(["photoMarkers"], "readwrite");
                 let objectStore = transaction.objectStore("photoMarkers");
     
-                let markerData = { latitude, longitude, image: compressedDataUrl, name: "未命名照片" };
-    
+                let markerData = { 
+                    latitude, 
+                    longitude, 
+                    image: compressedDataUrl,
+                    name: "未命名照片" ,
+                    date: phototime // ✅ 儲存拍攝時間
+                };
+                //console.log("📌 準備存入 IndexedDB:", markerData); // 🟢 確保 `phototime` 有存入
+
                 let request = objectStore.add(markerData);
     
                 request.onsuccess = function (event) {
@@ -228,10 +264,12 @@ function promptForGPS(img) {
                     console.log("✅ 照片已壓縮並儲存！");
                     
                     // ✅ 立即顯示照片與標記
-                    addMarkerToMap(markerData);
+                    let marker = addMarkerToMap(markerData);
                     console.log("照片成功儲存！");
                     // ✅ 地圖移動到最新的標記點
                     map.flyTo([latitude+0.01, longitude], 15,{ duration: 0.8 });
+
+                     // 讓地圖動畫跑完再開啟 Popup
                 };
             };
             reader.readAsDataURL(compressedBlob);
@@ -299,7 +337,9 @@ function promptForGPS(img) {
             console.error(`❌ 載入 JSON 失敗: ${url}`, error);
         }
     }
-       
+
+    let markers = []; // 儲存所有標記
+
     function addMarkerToMap(markerData) {
         let markerColor = "blue"; // 預設藍色
         if (markerData.categories) {
@@ -311,35 +351,54 @@ function promptForGPS(img) {
                 markerColor = "green";
             }
         }
-    
+
         let marker = L.marker([markerData.latitude, markerData.longitude], {
             icon: L.icon({
                 iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${markerColor}.png`,
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34]
-            })
+        }),
+        categories: markerData.categories || []
         }).addTo(map)
-            .bindPopup(`<strong>${markerData.name}</strong><br><img src="${markerData.image}" width="300"><br>GPS: ${markerData.latitude.toFixed(5)}, ${markerData.longitude.toFixed(5)}`)
-            .on("click", function () {
-                map.flyTo([markerData.latitude+0.01, markerData.longitude], 15,{ duration: 0.8 });
-            });
-    
+        .bindPopup(`
+        <div class="popup-content">
+            <strong>${markerData.name}</strong><br>
+            <img src="${markerData.image}" width="300"><br>
+            📅 拍攝日期: ${markerData.date || "未知日期"}<br>
+            GPS: ${markerData.latitude.toFixed(5)}, ${markerData.longitude.toFixed(5)}
+            </div>
+            `)
+        .on("click", function () {
+            map.flyTo([markerData.latitude+0.01, markerData.longitude], 15,{ duration: 0.8 });
+        });
+
+            // ✅ 手動加入 categories 屬性
+            marker.categories = markerData.categories || [];
+
+             // ✅ 將標記加入全域 `markers` 陣列
+            markers.push(marker); 
+            marker.id = markerData.id; // ✅ 確保標記有 ID
+            markers.push(marker); // ✅ 儲存到全域 `markers` 陣列
+            
+        
+            
         let listItem = document.createElement("div");
         listItem.className = "photo-item";
+        listItem.setAttribute("data-id", markerData.id);  //新加26
         listItem.innerHTML = `
-            <img src="${markerData.image}" class="thumbnail">
-            <div class="photo-info">
-                <input type="text" class="photo-name" placeholder="輸入照片名稱" data-id="${markerData.id}" value="${markerData.name}">
-                <div class="category-selection">
-                    <label><input type="checkbox" value="老屋"> 老屋</label>
-                    <label><input type="checkbox" value="磚＆裝飾"> 磚＆裝飾</label>
-                    <label><input type="checkbox" value="街景"> 街景</label>
-                </div>
-                <button class="go-to-marker">查看</button>
-                <button class="delete-photo">刪除</button>
+        <img src="${markerData.image}" class="thumbnail">
+        <div class="photo-info">
+            <input type="text" class="photo-name" placeholder="輸入照片名稱" data-id="${markerData.id}" value="${markerData.name}">
+            <div class="category-selection">
+                <label><input type="checkbox" value="老屋"> 老屋</label>
+                <label><input type="checkbox" value="磚＆裝飾"> 磚＆裝飾</label>
+                <label><input type="checkbox" value="街景"> 街景</label>
             </div>
-        `;
+            <button class="go-to-marker">查看</button>
+            <button class="delete-photo">刪除</button>
+        </div>
+    `;
     // ✅ 恢復已選分類
     let checkboxes = listItem.querySelectorAll(".category-selection input");
     checkboxes.forEach(checkbox => {
@@ -350,10 +409,11 @@ function promptForGPS(img) {
             let selectedCategories = Array.from(checkboxes)
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.value);
-
             updateMarkerCategory(markerData.id, selectedCategories);
+            
         });
     });
+
     
         // 綁定名稱變更事件
         let nameInput = listItem.querySelector(".photo-name");
@@ -393,6 +453,7 @@ function promptForGPS(img) {
     // ✅ 讓最新上傳的照片排在最左邊
     let photoList = document.getElementById("photoList");
     photoList.prepend(listItem);  // **使用 prepend() 而不是 appendChild()**
+    return marker; //加這串，上傳圖便時才能啟動Popup
     }
     
 
@@ -407,6 +468,33 @@ function promptForGPS(img) {
         };
     }
 
+    // 獲取 modal 元素
+const modal = document.getElementById("imageModal");
+const fullImage = document.getElementById("fullImage");
+const closeBtn = document.querySelector(".close");
+
+// 監聽所有 popup 內的圖片點擊事件
+document.addEventListener("click", function (event) {
+    if (event.target.tagName === "IMG" && event.target.closest(".leaflet-popup-content")) {
+        fullImage.src = event.target.src; // 設定放大的圖片
+        modal.style.display = "flex"; // 顯示 modal
+    }
+});
+
+// 點擊叉叉關閉 modal
+closeBtn.addEventListener("click", function () {
+    modal.style.display = "none";
+});
+
+// 點擊 modal 背景也可以關閉
+modal.addEventListener("click", function (event) {
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+});
+
+
+    
     function updateMarkerName(id, newName) {
         if (!newName.trim()) {
             newName = "未命名照片"; // 如果使用者沒輸入，使用預設值
@@ -515,6 +603,7 @@ function promptForGPS(img) {
                     let errorCount = 0;
     
                     data.forEach(marker => {
+                        marker.categories = marker.categories || []; // ✅ 確保 categories 存在
                         delete marker.id; // 確保不手動設定 id
                         let addRequest = objectStore.add(marker);
     
@@ -547,5 +636,46 @@ function promptForGPS(img) {
         };
         reader.readAsText(file);
     });
+    
+    function filterMarkers() {
+        let selectedCategories = Array.from(document.querySelectorAll(".category-filter:checked"))
+                                      .map(input => input.value);
+    
+        markers.forEach(marker => {
+            let markerCategories = marker.categories || [];
+            let isVisible = false;
+    
+            if (selectedCategories.includes("未分類")) {
+                isVisible = markerCategories.length === 0; // 沒有分類的標記
+            } else if (selectedCategories.length > 0) {
+                isVisible = selectedCategories.some(category => markerCategories.includes(category));
+            } else {
+                isVisible = true; // 若無選擇任何篩選條件，顯示所有標記
+            }
+    
+            // ✅ 地圖上的標記顯示或隱藏
+            if (isVisible) {
+                marker.addTo(map);
+            } else {
+                map.removeLayer(marker);
+            }
+    
+            // ✅ 照片列表同步篩選
+            let photoItem = document.querySelector(`.photo-item[data-id="${marker.id}"]`);
+            console.log(`檢查標記 ID: ${marker.id}, 是否找到對應照片？`, photoItem);
+    
+            if (photoItem) {
+                console.log(`設定照片列表顯示狀態: ${isVisible ? "顯示" : "隱藏"}`);
+                photoItem.style.display = isVisible ? "flex" : "none";
+            }
+        });
+    }
+    // ✅ 讓篩選選單監聽變化，並執行 `filterMarkers()`
+document.querySelectorAll(".category-filter").forEach(input => {
+    input.addEventListener("change", filterMarkers);
+});
+    
+
+    
     
 };
