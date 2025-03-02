@@ -10,6 +10,15 @@
     scroll-behavior: smooth;  /* 讓滾動動畫更順暢 */
 }
 
+#map {
+    width: 90vw;  /* 設定地圖寬度為視窗寬度的 90% */
+    /*max-width: 1200px;  設定地圖的最大寬度，避免在大螢幕上太寬 */
+    /*height: 80vh;  保持高度占視窗的 80% */
+    margin: 0 auto; /* 讓地圖置中 */
+    border-radius: 10px; /* 適當的圓角，讓視覺更柔和 */
+}
+
+
 .photo-item {
     flex: 0 0 auto;  /* 讓每個圖片區塊固定寬度，避免換行 */
     width: 150px;  /* 調整每個照片區塊的寬度 */
@@ -20,8 +29,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    justify-content: flex-end; /* 讓內容貼齊底部 */
 }
-
 
 .thumbnail {
     width: 120px;
@@ -46,13 +57,7 @@
 }
 
 
-.photo-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    margin-top: 5px;
-}
+
 
 .photo-name {
     width: 100%;
@@ -95,16 +100,132 @@
     object-fit: cover;  /* 確保圖片不會變形 */
 }
 
-.photo-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end; /* 讓內容貼齊底部 */
+
+
+/* 確保整個 popup 內容靠左 */
+.popup-content {
+    text-align: left;
+    font-size: 16px; /* 設定預設字體大小 */
+    color: crimson;
 }
 
+/* 只讓標題置中 */
 .popup-title {
+    font-size: 22px !important; /* 放大標題字體 */
+    font-weight: bold;
+    text-align: center; /* 讓標題置中 */
+    display: block;
+    margin-bottom: 8px; /* 與下方內容保持間距 */
+}
+
+
+
+.popup-content img {
+    max-height: 95vh; /* 設定最大高度為視窗高度的 80% */
+    height: auto;  /* 保持原始比例縮放 */
+    /*display: block;*/
+    margin: 0 auto; /* 讓圖片置中 */
+}
+
+/* 針對直式照片（高度大於寬度） */
+.popup-content img.portrait {
+    max-height: 2500px;  /* 限制直式照片的最大高度 */
+    width: auto;  /* 確保圖片等比例縮放 */
+}
+
+.gps-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 2000; /* ✅ 確保彈出視窗比地圖高 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 80%;
+    max-width: 400px;
+}
+
+
+
+.gps-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
     text-align: center;
-    font-size: 20px; /* 放大字體 */
-    font-weight: bold; /* 加粗 */
-    margin-bottom: 8px; /* 增加間距 */
+}
+
+.gps-preview {
+    width: 200px;
+    margin: 10px 0;
+}
+
+.gps-content input {
+    width: 80%;
+    padding: 5px;
+    margin: 5px 0;
+}
+
+.gps-content button {
+    margin: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+}
+
+/* 強制讓 popup 內容使用我們的 CSS */
+.leaflet-popup-content {
+    text-align: left !important;
+    font-size: 116px !important;
+}
+
+/* 確保標題置中 */
+.leaflet-popup-content .popup-title {
+    font-size: 122px !important;
+    text-align: center !important;
+    display: block;
+    font-weight: bold;
+    margin-bottom: 28px;
+}
+
+
+.popup-content strong {
+    font-size: 20px;  /* 調整標題字體大小 */
+    color: blue;  /* 設定標題顏色 */
+    display: block;  /* 讓標題獨立成一行 */
+    margin-bottom: -20px;  /* 標題與內文的間距 */
+    text-align: center;
+}
+
+/* 放大圖片的背景區塊 */
+.modal {
+    display: none; /* 預設隱藏 */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* 黑色半透明背景 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 放大的圖片 */
+.modal-content {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+}
+
+/* 右上角的關閉按鈕 */
+.close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
 }
