@@ -19,11 +19,7 @@
 }
 
 
-.photo-item {
-    flex: 0 0 auto;  /* 讓每個圖片區塊固定寬度，避免換行 */
-    width: 150px;  /* 調整每個照片區塊的寬度 */
-    text-align: center;
-}
+
 
 .photo-info {
     display: flex;
@@ -38,6 +34,8 @@
     width: 120px;
     height: auto;
     border-radius: 5px;
+    max-height: 100px;
+    object-fit: cover;  /* 確保圖片不會變形 */
 }
 
 
@@ -55,8 +53,6 @@
 #photoList::-webkit-scrollbar-thumb:hover {
     background: #202020;
 }
-
-
 
 
 .photo-name {
@@ -91,14 +87,20 @@
     align-items: center;
     justify-content: space-between;
     width: 120px; /* 固定寬度 */
-    height: 250px; /* 統一高度 */
+    /* height: 250px; 統一高度 */
+    /* flex: 0 0 auto;  讓每個圖片區塊固定寬度，避免換行 */
+    width: 150px;  /* 調整每個照片區塊的寬度 */
+     /*text-align: center;*/
+    background: white;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    transition: transform 0.2s;
+}
+.photo-item:hover {/* 讓指標的照片稍微放大 */
+    transform: scale(1.05);
 }
 
-.thumbnail {
-    max-width: 100px;
-    max-height: 100px;
-    object-fit: cover;  /* 確保圖片不會變形 */
-}
 
 
 
@@ -106,7 +108,7 @@
 .popup-content {
     text-align: left;
     font-size: 16px; /* 設定預設字體大小 */
-    color: crimson;
+    color: rgb(0, 0, 0);
 }
 
 /* 只讓標題置中 */
@@ -117,8 +119,6 @@
     display: block;
     margin-bottom: 8px; /* 與下方內容保持間距 */
 }
-
-
 
 .popup-content img {
     max-height: 95vh; /* 設定最大高度為視窗高度的 80% */
@@ -191,7 +191,7 @@
 
 .popup-content strong {
     font-size: 20px;  /* 調整標題字體大小 */
-    color: blue;  /* 設定標題顏色 */
+    color: rgb(0, 0, 102);  /* 設定標題顏色 */
     display: block;  /* 讓標題獨立成一行 */
     margin-bottom: -20px;  /* 標題與內文的間距 */
     text-align: center;
@@ -229,3 +229,34 @@
     font-weight: bold;
     cursor: pointer;
 }
+
+.category-tags {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.category-tags {
+    margin-top: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.photo-tag {
+    color: white;
+    /*padding: 3px 8px;*/
+    font-size: 18px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+/* 🔹 不同類別的標籤顏色 */
+.tag-red { background-color: #E63946; color: white; }
+.tag-orange { background-color: #F4A261; color: white; }
+.tag-yellow { background-color: #E9C46A; color: white; }
+.tag-green { background-color: #2A9D8F; color: white; }
+.tag-blue { background-color: #457B9D; color: white; }
+.tag-purple { background-color: #8B5CF6; color: white; }
+
